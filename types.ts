@@ -18,3 +18,15 @@ export interface AIResponse {
   analysis: string;
   mood: string;
 }
+
+export interface AudioData {
+  low: number;  // 0.0 - 1.0
+  mid: number;  // 0.0 - 1.0
+  high: number; // 0.0 - 1.0
+}
+
+export interface Track {
+  title: string;
+  artist: string;
+  url: string;
+}

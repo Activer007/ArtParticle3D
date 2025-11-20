@@ -10,6 +10,7 @@ interface ControlsProps {
   onConfigChange: (c: ParticleConfig) => void;
   aiData: AIResponse | null;
   isLoadingAI: boolean;
+  children?: React.ReactNode; // Add support for children (AudioPlayer)
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -20,7 +21,8 @@ const Controls: React.FC<ControlsProps> = ({
   config,
   onConfigChange,
   aiData,
-  isLoadingAI
+  isLoadingAI,
+  children
 }) => {
   const [isInsightOpen, setIsInsightOpen] = useState(true);
   
@@ -31,7 +33,7 @@ const Controls: React.FC<ControlsProps> = ({
   return (
     <div className="absolute top-0 left-0 w-full h-full pointer-events-none flex flex-col justify-between p-6 z-10">
       {/* Header / Painting Selector */}
-      <div className="pointer-events-auto bg-black/70 backdrop-blur-md p-4 rounded-xl border border-white/10 max-w-md animate-fade-in">
+      <div className="pointer-events-auto bg-black/70 backdrop-blur-md p-4 rounded-xl border border-white/10 max-w-md animate-fade-in max-h-[80vh] overflow-y-auto">
         <h1 className="mb-4">
           <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
             ArtParticle 3D
@@ -187,6 +189,9 @@ const Controls: React.FC<ControlsProps> = ({
           />
         </div>
         
+        {/* Render Audio Player if provided */}
+        {children}
+
         <div className="text-xs text-gray-500 pt-2 border-t border-white/10 text-center">
            Drag to Rotate • Scroll to Zoom
         </div>

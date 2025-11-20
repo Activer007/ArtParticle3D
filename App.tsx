@@ -1,10 +1,11 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
-import { Painting, ParticleConfig, AIResponse } from './types';
+import { Painting, ParticleConfig, AIResponse, AudioData } from './types';
 import { analyzePainting } from './services/geminiService';
 import ParticleSystem from './components/ParticleSystem';
 import Controls from './components/Controls';
+import AudioPlayer from './components/AudioPlayer';
 
 // Pre-defined list of masterpieces (using Wikimedia Commons for CORS friendliness)
 const DEFAULT_PAINTINGS: Painting[] = [
@@ -44,6 +45,9 @@ const App: React.FC = () => {
   const [aiData, setAiData] = useState<AIResponse | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   
+  // Ref for shared audio analysis data (avoids re-renders)
+  const audioDataRef = useRef<AudioData>({ low: 0, mid: 0, high: 0 });
+
   const [config, setConfig] = useState<ParticleConfig>({
     size: 0.8,
     depth: 15, // How much "3D" pop it has based on brightness
@@ -110,7 +114,10 @@ const App: React.FC = () => {
         onConfigChange={setConfig}
         aiData={aiData}
         isLoadingAI={isLoadingAI}
-      />
+      >
+        {/* Inject AudioPlayer inside the Controls sidebar */}
+        <AudioPlayer audioDataRef={audioDataRef} />
+      </Controls>
 
       <Canvas
         camera={{ position: [0, 0, 180], fov: 50 }} // Moved back to 180 to ensure full image visibility
@@ -125,6 +132,7 @@ const App: React.FC = () => {
                <ParticleSystem 
                   imageUrl={selectedPainting.url} 
                   config={config}
+                  audioDataRef={audioDataRef}
                />
             </group>
         </Suspense>

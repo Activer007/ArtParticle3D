@@ -2,11 +2,12 @@ import React, { useMemo, useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
-import { ParticleConfig } from '../types';
+import { ParticleConfig, AudioData } from '../types';
 
 interface ParticleSystemProps {
   imageUrl: string;
   config: ParticleConfig;
+  audioDataRef?: React.MutableRefObject<AudioData>;
 }
 
 interface GeometryData {
@@ -25,6 +26,10 @@ const vertexShader = `
   uniform float uDepth;
   uniform float uDispersion;
   uniform float uSize;
+  
+  // Audio Uniforms
+  uniform float uAudioLow;  // Bass
+  uniform float uAudioHigh; // Treble
 
   attribute float aBrightness;
   attribute float aRandom;
@@ -37,12 +42,15 @@ const vertexShader = `
     vec3 pos = position;
 
     // 1. Calculate Z-depth based on brightness
-    float z = aBrightness * uDepth;
+    // Bass boosts the depth slightly
+    float z = aBrightness * uDepth * (1.0 + uAudioLow * 0.5);
 
     // 2. Dispersion / Explosion Logic
-    // We replace the JS Math.sin/cos noise with GLSL using the stable aRandom attribute
-    if (uDispersion > 0.0) {
-      float spread = uDispersion * 2.0;
+    // Base dispersion + Treble kick
+    float effectiveDispersion = uDispersion + (uAudioHigh * 5.0);
+
+    if (effectiveDispersion > 0.0) {
+      float spread = effectiveDispersion * 2.0;
       
       // Create noise based on random seed and time
       float noiseX = sin(aRandom * 100.0 + uTime * 2.0) * cos(aRandom * 200.0);
@@ -57,7 +65,10 @@ const vertexShader = `
     }
 
     // 3. Waving Effect (Sine wave across X axis)
-    z += sin(pos.x * 0.05 + uTime) * 1.5;
+    // Bass frequencies increase the wave amplitude significantly
+    float waveAmp = 1.5 + (uAudioLow * 8.0); 
+    float waveFreq = 0.05;
+    z += sin(pos.x * waveFreq + uTime) * waveAmp;
 
     pos.z = z;
 
@@ -71,6 +82,7 @@ const vertexShader = `
 
 const fragmentShader = `
   uniform float uBrightness;
+  uniform float uAudioMid; // Mids
   varying vec3 vColor;
 
   void main() {
@@ -79,7 +91,9 @@ const fragmentShader = `
     if (length(coord) > 0.5) discard;
 
     // Output color multiplied by global brightness
-    gl_FragColor = vec4(vColor * uBrightness, 0.85);
+    // Mids make the particles pulse brighter
+    float pulse = 1.0 + uAudioMid * 1.5;
+    gl_FragColor = vec4(vColor * uBrightness * pulse, 0.85);
   }
 `;
 
@@ -196,7 +210,7 @@ const loadImageData = (src: string, density: number): Promise<GeometryData> => {
   });
 };
 
-const ParticleSystem: React.FC<ParticleSystemProps> = ({ imageUrl, config }) => {
+const ParticleSystem: React.FC<ParticleSystemProps> = ({ imageUrl, config, audioDataRef }) => {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const pointsRef = useRef<THREE.Points>(null);
   const [geometryData, setGeometryData] = useState<GeometryData | null>(null);
@@ -230,19 +244,28 @@ const ParticleSystem: React.FC<ParticleSystemProps> = ({ imageUrl, config }) => 
     uDepth: { value: config.depth },
     uDispersion: { value: config.dispersion },
     uBrightness: { value: config.brightness },
-    uSize: { value: config.size }
+    uSize: { value: config.size },
+    // Audio Uniforms
+    uAudioLow: { value: 0 },
+    uAudioMid: { value: 0 },
+    uAudioHigh: { value: 0 }
   }), []);
 
   // Update uniforms every frame (GPU animation)
   useFrame((state) => {
     if (materialRef.current) {
         materialRef.current.uniforms.uTime.value = state.clock.getElapsedTime();
-        // We update these frame-by-frame to allow smooth transitions if we wanted to interpolate,
-        // but mainly to ensure the shader stays in sync with React state without recreating the material.
         materialRef.current.uniforms.uDepth.value = config.depth;
         materialRef.current.uniforms.uDispersion.value = config.dispersion;
         materialRef.current.uniforms.uBrightness.value = config.brightness;
         materialRef.current.uniforms.uSize.value = config.size;
+
+        // Apply Audio Data if available
+        if (audioDataRef) {
+          materialRef.current.uniforms.uAudioLow.value = audioDataRef.current.low;
+          materialRef.current.uniforms.uAudioMid.value = audioDataRef.current.mid;
+          materialRef.current.uniforms.uAudioHigh.value = audioDataRef.current.high;
+        }
     }
   });
 
