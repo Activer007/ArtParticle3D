@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { AudioData, Track } from '../types';
 
@@ -5,22 +6,31 @@ interface AudioPlayerProps {
   audioDataRef: React.MutableRefObject<AudioData>;
 }
 
-// Using Wikimedia Commons transcoded MP3s for better browser compatibility (Safari often struggles with OGG)
+// Using both MP3 and OGG for maximum browser compatibility
 const PLAYLIST: Track[] = [
   {
     title: "Gymnopédie No. 1",
     artist: "Erik Satie",
-    url: "https://upload.wikimedia.org/wikipedia/commons/transcoded/3/35/Gymnopedie_No_1.ogg/Gymnopedie_No_1.ogg.mp3"
+    sources: [
+        { url: "https://upload.wikimedia.org/wikipedia/commons/transcoded/3/35/Gymnopedie_No_1.ogg/Gymnopedie_No_1.ogg.mp3", type: "audio/mpeg" },
+        { url: "https://upload.wikimedia.org/wikipedia/commons/3/35/Gymnopedie_No_1.ogg", type: "audio/ogg" }
+    ]
   },
   {
     title: "Clair de Lune",
     artist: "Claude Debussy",
-    url: "https://upload.wikimedia.org/wikipedia/commons/transcoded/2/2f/Clair_de_lune_%28Debussy%29_Suite_bergamasque.ogg/Clair_de_lune_%28Debussy%29_Suite_bergamasque.ogg.mp3"
+    sources: [
+        { url: "https://upload.wikimedia.org/wikipedia/commons/transcoded/2/2f/Clair_de_lune_%28Debussy%29_Suite_bergamasque.ogg/Clair_de_lune_%28Debussy%29_Suite_bergamasque.ogg.mp3", type: "audio/mpeg" },
+        { url: "https://upload.wikimedia.org/wikipedia/commons/2/2f/Clair_de_lune_%28Debussy%29_Suite_bergamasque.ogg", type: "audio/ogg" }
+    ]
   },
   {
     title: "Moonlight Sonata",
     artist: "Ludwig van Beethoven",
-    url: "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/eb/Beethoven_Moonlight_1st_movement.ogg/Beethoven_Moonlight_1st_movement.ogg.mp3"
+    sources: [
+        { url: "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/eb/Beethoven_Moonlight_1st_movement.ogg/Beethoven_Moonlight_1st_movement.ogg.mp3", type: "audio/mpeg" },
+        { url: "https://upload.wikimedia.org/wikipedia/commons/e/eb/Beethoven_Moonlight_1st_movement.ogg", type: "audio/ogg" }
+    ]
   }
 ];
 
@@ -39,18 +49,27 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioDataRef }) => {
   const initAudio = () => {
     if (isInitialized || !audioRef.current) return;
 
+    // Fix for Safari which needs webkitAudioContext
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     const audioCtx = new AudioContext();
     
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 512;
     
-    const source = audioCtx.createMediaElementSource(audioRef.current);
-    source.connect(analyser);
-    analyser.connect(audioCtx.destination);
+    // Connect audio element to analyser
+    // Note: This must be done after user interaction
+    if (!sourceRef.current) {
+        try {
+            const source = audioCtx.createMediaElementSource(audioRef.current);
+            source.connect(analyser);
+            analyser.connect(audioCtx.destination);
+            sourceRef.current = source;
+        } catch(e) {
+            console.warn("MediaElementSource creation failed", e);
+        }
+    }
 
     analyserRef.current = analyser;
-    sourceRef.current = source;
     setIsInitialized(true);
   };
 
@@ -68,27 +87,27 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioDataRef }) => {
 
     if (isPlaying) {
       audioRef.current.pause();
+      setIsPlaying(false);
     } else {
       try {
         await audioRef.current.play();
+        setIsPlaying(true);
       } catch (e) {
         console.error("Playback failed", e);
         setIsPlaying(false);
       }
     }
-    setIsPlaying(!isPlaying);
   };
 
   const nextTrack = () => {
     const next = (currentTrackIndex + 1) % PLAYLIST.length;
     setCurrentTrackIndex(next);
-    setIsPlaying(true); // Auto play next
+    // isPlaying state remains true, effect handles playback
   };
 
   const prevTrack = () => {
     const prev = (currentTrackIndex - 1 + PLAYLIST.length) % PLAYLIST.length;
     setCurrentTrackIndex(prev);
-    setIsPlaying(true);
   };
 
   // Analysis Loop
@@ -117,7 +136,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioDataRef }) => {
       for (let i = 20; i < 100; i++) highSum += dataArray[i];
       const high = (highSum / 80) / 255;
 
-      // Smooth damping could be done here, but we'll write raw normalized values
+      // Write raw normalized values to ref
       audioDataRef.current = { low, mid, high };
     } else if (!isPlaying) {
       // Decay to zero if paused
@@ -137,21 +156,28 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioDataRef }) => {
     return () => cancelAnimationFrame(requestRef.current);
   }, [isPlaying]);
 
-  // Auto-play when track changes if was playing
+  // Handle Track Change
   useEffect(() => {
     if (audioRef.current) {
-        audioRef.current.src = currentTrack.url;
+        // Load the new sources
+        audioRef.current.load();
+        
         if (isPlaying) {
-            audioRef.current.play().catch((e) => {
-              console.warn("Autoplay blocked or failed", e);
-              setIsPlaying(false);
-            });
+            const playPromise = audioRef.current.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                   console.warn("Auto-playback interrupted:", error);
+                   // Do not set isPlaying(false) here immediately to avoid UI flicker if it's just a buffering issue,
+                   // but effectively if it fails it stops.
+                });
+            }
         }
     }
   }, [currentTrackIndex]);
 
-  const handleAudioError = (e: React.SyntheticEvent<HTMLAudioElement, Event>) => {
-    console.error("Audio resource failed to load", e);
+  const handleAudioError = () => {
+    // Simple string logging to avoid cyclic object error
+    console.error("Audio source format not supported or load failed.");
     setIsPlaying(false);
   };
 
@@ -182,9 +208,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioDataRef }) => {
             </div>
         </div>
         
-        {/* Simple Visualizer Bars */}
+        {/* Visualizer Bars */}
         <div className="flex items-end justify-between h-6 gap-0.5 mt-1 opacity-80">
-             {/* Use state-independent CSS animation for visual flair that pauses when stopped */}
              <div className={`bg-blue-500 w-1/3 rounded-t-sm transition-all duration-75 ${isPlaying ? 'animate-pulse' : 'h-1'}`} style={{ height: isPlaying ? '80%' : '10%' }}></div>
              <div className={`bg-purple-500 w-1/3 rounded-t-sm transition-all duration-100 ${isPlaying ? 'animate-pulse delay-75' : 'h-1'}`} style={{ height: isPlaying ? '60%' : '10%' }}></div>
              <div className={`bg-pink-500 w-1/3 rounded-t-sm transition-all duration-150 ${isPlaying ? 'animate-pulse delay-150' : 'h-1'}`} style={{ height: isPlaying ? '90%' : '10%' }}></div>
@@ -196,7 +221,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioDataRef }) => {
         crossOrigin="anonymous" 
         onEnded={nextTrack} 
         onError={handleAudioError}
-      />
+      >
+        {currentTrack.sources.map((source, index) => (
+            <source key={index} src={source.url} type={source.type} />
+        ))}
+      </audio>
     </div>
   );
 };

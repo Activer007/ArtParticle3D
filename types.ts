@@ -1,3 +1,4 @@
+
 export interface Painting {
   id: string;
   title: string;
@@ -12,6 +13,7 @@ export interface ParticleConfig {
   density: number; // Skip pixels to reduce load
   dispersion: number; // Random scatter effect
   brightness: number; // Global brightness multiplier
+  useSemanticDepth?: boolean; // Enable smart depth based on color theory
 }
 
 export interface AIResponse {
@@ -28,5 +30,8 @@ export interface AudioData {
 export interface Track {
   title: string;
   artist: string;
-  url: string;
+  sources: {
+    url: string;
+    type: string;
+  }[];
 }
