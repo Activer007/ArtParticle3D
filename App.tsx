@@ -46,7 +46,7 @@ const App: React.FC = () => {
   const [config, setConfig] = useState<ParticleConfig>({
     size: 0.8,
     depth: 15, // How much "3D" pop it has based on brightness
-    density: 2.5, // Controls sampling rate (2.5 is moderate)
+    density: 1.5, // Set to 1.5 to enhance the 3D point-cloud aesthetic
     dispersion: 0,
     brightness: 1.2 // Default slight boost
   });
@@ -84,7 +84,7 @@ const App: React.FC = () => {
       />
 
       <Canvas
-        camera={{ position: [0, 0, 80], fov: 50 }}
+        camera={{ position: [0, 0, 180], fov: 50 }} // Moved back to 180 to ensure full image visibility
         dpr={[1, 2]} // Handle high DPI screens
         gl={{ antialias: true, alpha: false }}
       >

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ParticleConfig, Painting, AIResponse } from '../types';
 
 interface ControlsProps {
@@ -20,6 +20,7 @@ const Controls: React.FC<ControlsProps> = ({
   aiData,
   isLoadingAI
 }) => {
+  const [isInsightOpen, setIsInsightOpen] = useState(true);
   
   const updateConfig = (key: keyof ParticleConfig, value: number) => {
     onConfigChange({ ...config, [key]: value });
@@ -56,20 +57,37 @@ const Controls: React.FC<ControlsProps> = ({
 
         {/* AI Insight Section */}
         <div className="mt-4 border-t border-white/10 pt-4">
-            <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-purple-400">Gemini Insight</h2>
-                {isLoadingAI && <div className="w-3 h-3 rounded-full border-2 border-t-purple-500 animate-spin"></div>}
-            </div>
-            {aiData ? (
-                <div>
-                    <p className="text-sm text-gray-200 leading-relaxed mb-2">{aiData.analysis}</p>
-                    <div className="inline-block bg-purple-900/50 border border-purple-500/30 text-purple-200 text-xs px-2 py-1 rounded">
-                        Mood: {aiData.mood}
-                    </div>
+            <button 
+                onClick={() => setIsInsightOpen(!isInsightOpen)}
+                className="w-full flex items-center justify-between mb-2 group focus:outline-none"
+            >
+                <div className="flex items-center gap-2">
+                    <h2 className="text-xs font-semibold uppercase tracking-widest text-purple-400 group-hover:text-purple-300 transition-colors">Gemini Insight</h2>
+                    <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className={`h-3 w-3 text-purple-400 transition-transform duration-300 ${isInsightOpen ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                 </div>
-            ) : (
-                <p className="text-xs text-gray-500 italic">Analyzing masterpiece...</p>
-            )}
+                {isLoadingAI && <div className="w-3 h-3 rounded-full border-2 border-t-purple-500 animate-spin"></div>}
+            </button>
+
+            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isInsightOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                {aiData ? (
+                    <div>
+                        <p className="text-sm text-gray-200 leading-relaxed mb-2">{aiData.analysis}</p>
+                        <div className="inline-block bg-purple-900/50 border border-purple-500/30 text-purple-200 text-xs px-2 py-1 rounded">
+                            Mood: {aiData.mood}
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-xs text-gray-500 italic">Analyzing masterpiece...</p>
+                )}
+            </div>
         </div>
       </div>
 
