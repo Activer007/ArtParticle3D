@@ -5,6 +5,7 @@ interface ControlsProps {
   paintings: Painting[];
   selectedPainting: Painting;
   onSelectPainting: (p: Painting) => void;
+  onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   config: ParticleConfig;
   onConfigChange: (c: ParticleConfig) => void;
   aiData: AIResponse | null;
@@ -15,6 +16,7 @@ const Controls: React.FC<ControlsProps> = ({
   paintings,
   selectedPainting,
   onSelectPainting,
+  onUpload,
   config,
   onConfigChange,
   aiData,
@@ -53,6 +55,10 @@ const Controls: React.FC<ControlsProps> = ({
               {p.title}
             </button>
           ))}
+          <label className="cursor-pointer px-3 py-1 text-xs rounded-full border border-dashed border-gray-500 text-gray-400 hover:border-white hover:text-white transition-all flex items-center gap-1">
+             <span>+ Upload</span>
+             <input type="file" accept="image/*" className="hidden" onChange={onUpload} />
+          </label>
         </div>
 
         {/* AI Insight Section */}

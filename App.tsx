@@ -7,7 +7,7 @@ import ParticleSystem from './components/ParticleSystem';
 import Controls from './components/Controls';
 
 // Pre-defined list of masterpieces (using Wikimedia Commons for CORS friendliness)
-const PAINTINGS: Painting[] = [
+const DEFAULT_PAINTINGS: Painting[] = [
   {
     id: 'starry-night',
     title: 'The Starry Night',
@@ -39,7 +39,8 @@ const PAINTINGS: Painting[] = [
 ];
 
 const App: React.FC = () => {
-  const [selectedPainting, setSelectedPainting] = useState<Painting>(PAINTINGS[0]);
+  const [paintings, setPaintings] = useState<Painting[]>(DEFAULT_PAINTINGS);
+  const [selectedPainting, setSelectedPainting] = useState<Painting>(DEFAULT_PAINTINGS[0]);
   const [aiData, setAiData] = useState<AIResponse | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   
@@ -51,9 +52,36 @@ const App: React.FC = () => {
     brightness: 1.2 // Default slight boost
   });
 
+  // Handle Image Upload
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    const newPainting: Painting = {
+      id: `custom-${Date.now()}`,
+      title: file.name.split('.')[0] || 'Custom Upload',
+      artist: 'User Upload',
+      year: new Date().getFullYear().toString(),
+      url: url
+    };
+
+    setPaintings(prev => [...prev, newPainting]);
+    setSelectedPainting(newPainting);
+  };
+
   // Fetch AI Analysis when painting changes
   useEffect(() => {
     const fetchAI = async () => {
+      // Handle Custom Images - Skip API call
+      if (selectedPainting.id.startsWith('custom-')) {
+        setAiData({
+          analysis: "This is a custom image uploaded by you. Explore its 3D structure by rotating the view and adjusting the Depth slider!",
+          mood: "Personal, Unique, Creative"
+        });
+        return;
+      }
+
       setIsLoadingAI(true);
       setAiData(null);
       try {
@@ -74,9 +102,10 @@ const App: React.FC = () => {
     <div className="relative w-full h-full bg-gray-900">
       
       <Controls 
-        paintings={PAINTINGS}
+        paintings={paintings}
         selectedPainting={selectedPainting}
         onSelectPainting={setSelectedPainting}
+        onUpload={handleImageUpload}
         config={config}
         onConfigChange={setConfig}
         aiData={aiData}
