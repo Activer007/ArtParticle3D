@@ -4,14 +4,14 @@ An interactive 3D point-cloud visualization of famous masterpieces. This applica
 
 ## Gallery
 
-### The Starry Night (星月夜)
-![The Starry Night Visualization](https://file-s.s3.amazonaws.com/file/b5c471c3-076a-4295-9803-cf6804501c53)
 
 ### Great Wave off Kanagawa (神奈川冲浪里)
-![Great Wave Visualization](https://file-s.s3.amazonaws.com/file/29736999-8e1d-434e-8413-868b57c10801)
+![Great Wave Visualization](images/weave.png)
+
+![Great Wave Visualization](images/weave2.png)
 
 ### Venus de Milo (断臂维纳斯)
-![Venus de Milo Visualization](https://file-s.s3.amazonaws.com/file/c8244662-960d-4577-b491-9dc7264f1285)
+![Venus de Milo Visualization](images/venus.png)
 
 ## Features
 
