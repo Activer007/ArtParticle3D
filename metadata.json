@@ -1,0 +1,5 @@
+{
+  "name": "名画粒子 (ArtParticle 3D)",
+  "description": "An interactive 3D point-cloud visualization of famous masterpieces. Users can manipulate the view, adjust particle density, and gain insights via Gemini AI.",
+  "requestFramePermissions": []
+}
