@@ -1,10 +1,32 @@
 import { GoogleGenAI } from "@google/genai";
 import { Painting, AIResponse } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const getGeminiApiKey = (): string | undefined => {
+  if (typeof process !== "undefined" && process.env?.GEMINI_API_KEY) {
+    return process.env.GEMINI_API_KEY;
+  }
+
+  if (typeof import.meta !== "undefined" && (import.meta as any).env?.GEMINI_API_KEY) {
+    return (import.meta as any).env.GEMINI_API_KEY as string;
+  }
+
+  return undefined;
+};
+
+export const hasGeminiApiKey = (): boolean => Boolean(getGeminiApiKey());
 
 export const analyzePainting = async (painting: Painting): Promise<AIResponse> => {
+  const apiKey = getGeminiApiKey();
+
+  if (!apiKey) {
+    return {
+      analysis: "Gemini API key is not configured. Set GEMINI_API_KEY to enable live insights.",
+      mood: "未配置 API Key"
+    };
+  }
+
   try {
+    const ai = new GoogleGenAI({ apiKey });
     const model = "gemini-2.5-flash";
     const prompt = `
       Analyze the painting "${painting.title}" by ${painting.artist} (${painting.year}).

@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
 import { Painting, ParticleConfig, AIResponse, AudioData } from './types';
-import { analyzePainting } from './services/geminiService';
+import { analyzePainting, hasGeminiApiKey } from './services/geminiService';
 import ParticleSystem from './components/ParticleSystem';
 import Controls from './components/Controls';
 import AudioPlayer from './components/AudioPlayer';
@@ -44,6 +44,7 @@ const App: React.FC = () => {
   const [selectedPainting, setSelectedPainting] = useState<Painting>(DEFAULT_PAINTINGS[0]);
   const [aiData, setAiData] = useState<AIResponse | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [geminiConfigured] = useState<boolean>(hasGeminiApiKey());
   
   // Ref for shared audio analysis data (avoids re-renders)
   const audioDataRef = useRef<AudioData>({ low: 0, mid: 0, high: 0 });
@@ -83,6 +84,16 @@ const App: React.FC = () => {
           analysis: "This is a custom image uploaded by you. Explore its 3D structure by rotating the view and adjusting the Depth slider!",
           mood: "Personal, Unique, Creative"
         });
+        setIsLoadingAI(false);
+        return;
+      }
+
+      if (!geminiConfigured) {
+        setAiData({
+          analysis: "Gemini API key is not configured. Set GEMINI_API_KEY to enable live insights.",
+          mood: "未配置 API Key"
+        });
+        setIsLoadingAI(false);
         return;
       }
 
@@ -100,7 +111,7 @@ const App: React.FC = () => {
     };
 
     fetchAI();
-  }, [selectedPainting]);
+  }, [selectedPainting, geminiConfigured]);
 
   return (
     <div className="relative w-full h-full bg-gray-900">
@@ -114,6 +125,7 @@ const App: React.FC = () => {
         onConfigChange={setConfig}
         aiData={aiData}
         isLoadingAI={isLoadingAI}
+        hasGeminiApiKey={geminiConfigured}
       >
         {/* Inject AudioPlayer inside the Controls sidebar */}
         <AudioPlayer audioDataRef={audioDataRef} />

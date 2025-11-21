@@ -31,3 +31,20 @@ An interactive 3D point-cloud visualization of famous masterpieces. This applica
 *   **AI**: Google Gemini API (@google/genai)
 *   **Styling**: Tailwind CSS
 *   **Build Tool**: Vite (implied)
+
+## Running Locally
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Configure the Gemini API key by copying `.env.example` to `.env` and setting the value:
+   ```bash
+   cp .env.example .env
+   echo "GEMINI_API_KEY=your_key_here" >> .env
+   ```
+   When `GEMINI_API_KEY` is omitted, the app will skip remote Gemini calls and display a "未配置 API Key" notice in the Gemini Insight panel.
+3. Start the dev server:
+   ```bash
+   npm run dev
+   ```
