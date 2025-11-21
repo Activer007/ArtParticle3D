@@ -10,6 +10,7 @@ interface ControlsProps {
   onConfigChange: (c: ParticleConfig) => void;
   aiData: AIResponse | null;
   isLoadingAI: boolean;
+  hasGeminiApiKey: boolean;
   children?: React.ReactNode; // Add support for children (AudioPlayer)
 }
 
@@ -22,6 +23,7 @@ const Controls: React.FC<ControlsProps> = ({
   onConfigChange,
   aiData,
   isLoadingAI,
+  hasGeminiApiKey,
   children
 }) => {
   const [isInsightOpen, setIsInsightOpen] = useState(true);
@@ -85,7 +87,11 @@ const Controls: React.FC<ControlsProps> = ({
             </button>
 
             <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isInsightOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                {aiData ? (
+                {!hasGeminiApiKey ? (
+                    <div className="text-xs text-amber-300 bg-amber-500/10 border border-amber-400/30 px-3 py-2 rounded">
+                        未配置 API Key。请在环境变量中设置 GEMINI_API_KEY 以启用 Gemini 分析。
+                    </div>
+                ) : aiData ? (
                     <div>
                         <p className="text-sm text-gray-200 leading-relaxed mb-2">{aiData.analysis}</p>
                         <div className="inline-block bg-purple-900/50 border border-purple-500/30 text-purple-200 text-xs px-2 py-1 rounded">
